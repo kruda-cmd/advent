@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Адвент-календар команди</title>
+<link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f385.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{
+  --pine:#0E2A22; --pine2:#163B30; --green:#1F5A45; --red:#B3322F; --wine:#7A1F2B;
+  --gold:#D4A84B; --gold2:#F2D27E; --cream:#F6EFE2; --ink:#1B1A17; --r:18px;
+  --head:'Unbounded',system-ui,sans-serif; --body:'Manrope',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--body);color:var(--cream);background:#101e2a;overflow:hidden;-webkit-tap-highlight-color:transparent}
+body:before{content:"";position:fixed;inset:0;z-index:-2;
+  background:radial-gradient(900px 500px at 12% -8%,rgba(242,210,126,.12),transparent 60%),
+             linear-gradient(180deg,#0d1a25 0%,#172834 38%,#2a4052 76%,#3a5266 100%)}
+/* календар на будиночку: синє нічне небо, сніг падає і поверх будинку, земля зі снігом на всю ширину */
+body.house-on #snow{z-index:40}
+body.house-on .stage{padding-bottom:0}
+body.house-on:after{content:"";position:fixed;left:0;right:0;bottom:0;height:5.2vh;z-index:-1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(234,239,244,0) 0%,#dfe7ee 40%,#edf2f6 100%)}
+body.has-bg:before{background:linear-gradient(180deg,rgba(8,24,19,.55),rgba(8,24,19,.78)),var(--bgimg) center/cover no-repeat}
+#snow{position:fixed;inset:0;z-index:-1;pointer-events:none}
+button{font-family:var(--head);cursor:pointer;border:0}
+input{font-family:var(--body)}
+.btn{background:var(--cream);color:var(--pine);border-radius:999px;padding:14px 26px;font-size:15px;font-weight:600;letter-spacing:.2px;box-shadow:0 6px 0 rgba(0,0,0,.25);transition:transform .12s,box-shadow .12s,opacity .2s}
+.btn:active{transform:translateY(3px);box-shadow:0 3px 0 rgba(0,0,0,.25)}
+.btn.gold{background:linear-gradient(180deg,var(--gold2),var(--gold));color:#3a2a08}
+.btn.red{background:var(--red);color:#fff}
+.btn.ghost{background:rgba(246,239,226,.1);color:var(--cream);box-shadow:none;border:1px solid rgba(246,239,226,.25)}
+.btn:disabled{opacity:.4;pointer-events:none}
+.eyebrow{font-family:var(--head);font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--gold2)}
+h1,h2,h3{font-family:var(--head);font-weight:800;line-height:1.08}
+#toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(30px);background:var(--cream);color:var(--pine);padding:12px 20px;border-radius:14px;font-weight:700;opacity:0;transition:.3s;z-index:99;max-width:90vw;text-align:center;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%)}
+
+/* ============ ЕКРАН ВЕДУЧОГО ============ */
+.top{position:fixed;top:0;left:0;right:0;height:64px;display:flex;align-items:center;gap:16px;padding:0 26px;z-index:20}
+.logo{display:flex;align-items:center;gap:12px;font-family:var(--head);font-weight:800;font-size:18px}
+.logo .star{width:34px;height:34px;border-radius:50%;background:var(--gold);display:grid;place-items:center;color:var(--pine);font-size:18px;box-shadow:0 0 22px rgba(242,210,126,.6)}
+.top .sp{flex:1}
+.pill{background:rgba(246,239,226,.1);border:1px solid rgba(246,239,226,.18);border-radius:999px;padding:8px 14px;font-weight:700;font-size:13px;white-space:nowrap}
+.icon-btn{width:40px;height:40px;border-radius:50%;background:rgba(246,239,226,.1);border:1px solid rgba(246,239,226,.2);color:var(--cream);font-size:17px;display:grid;place-items:center}
+.icon-btn:hover{background:rgba(246,239,226,.2)}
+#volBox{display:flex;align-items:center;gap:8px;background:rgba(246,239,226,.1);border:1px solid rgba(246,239,226,.18);border-radius:999px;padding:4px 12px 4px 4px}
+#volBox button{width:32px;height:32px;border-radius:50%;background:transparent;font-size:16px;color:var(--cream)}
+#volBox input{width:110px;accent-color:var(--gold)}
+#volBox .v{font-size:12px;font-weight:700;min-width:38px}
+.stage{position:fixed;top:64px;left:0;right:0;bottom:0;padding:10px 26px 22px}
+
+/* реєстрація */
+.reg{display:grid;grid-template-columns:1.05fr auto 1fr;gap:36px;align-items:center;height:100%;max-width:1500px;margin:0 auto}
+.reg h1{font-size:clamp(34px,4.4vw,72px);margin:14px 0 16px;background:linear-gradient(180deg,#fff,var(--gold2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.reg .sub{font-size:clamp(15px,1.4vw,21px);opacity:.85;max-width:560px;line-height:1.45}
+.steps{margin-top:26px;display:grid;gap:12px}
+.steps div{display:flex;gap:14px;align-items:center;font-size:clamp(14px,1.15vw,18px);font-weight:700}
+.steps b{width:34px;height:34px;border-radius:50%;background:var(--red);display:grid;place-items:center;font-family:var(--head);flex:none}
+.qr-card{background:var(--cream);color:var(--pine);border-radius:26px;padding:22px;text-align:center;box-shadow:0 30px 60px rgba(0,0,0,.4),0 0 0 8px rgba(212,168,75,.35);position:relative}
+.qr-card:before{content:"📱 СКАНУЙ";position:absolute;top:-16px;left:50%;transform:translateX(-50%);background:var(--red);color:#fff;font-family:var(--head);font-size:12px;letter-spacing:2px;padding:7px 14px;border-radius:999px;white-space:nowrap}
+#qr{display:flex;justify-content:center}
+#qr img,#qr canvas{width:min(30vh,300px)!important;height:min(30vh,300px)!important}
+.qr-card .url{font-size:10px;margin-top:10px;word-break:break-all;max-width:min(30vh,300px);opacity:.6}
+.reg-side{display:flex;flex-direction:column;gap:16px;height:min(76vh,700px)}
+.reg-side h3{font-size:20px;display:flex;align-items:center;gap:10px}
+.reg-side h3 .cnt{background:var(--gold);color:var(--pine);border-radius:999px;padding:4px 12px;font-size:16px}
+.chips{flex:1;overflow:auto;display:flex;flex-wrap:wrap;align-content:flex-start;gap:8px;padding:14px;background:rgba(0,0,0,.18);border-radius:var(--r);border:1px dashed rgba(246,239,226,.2)}
+.chip{background:rgba(246,239,226,.12);border:1px solid rgba(246,239,226,.18);border-radius:999px;padding:8px 8px 8px 14px;font-weight:700;font-size:15px;display:flex;align-items:center;gap:6px;animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
+.chip.done{opacity:.45;text-decoration:line-through}
+.chip .x{width:22px;height:22px;border-radius:50%;background:transparent;color:var(--cream);opacity:.45;font-size:13px}
+.chip .x:hover{opacity:1;background:rgba(0,0,0,.3)}
+.chips .empty{opacity:.55;font-size:14px;margin:auto;text-align:center}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+.addf{display:flex;gap:8px}
+.addf input{flex:1;border-radius:999px;border:1px solid rgba(246,239,226,.25);background:rgba(0,0,0,.2);color:var(--cream);padding:12px 16px;font-size:14px;outline:none}
+
+/* календар */
+.cal{display:grid;grid-template-columns:1fr min(30vw,420px);gap:18px;height:100%}
+.board{position:relative;border-radius:28px;padding:18px;background:linear-gradient(160deg,#5b2a1c,#3b1a12);box-shadow:inset 0 0 0 6px #2a120c,inset 0 0 0 9px rgba(212,168,75,.55),0 30px 60px rgba(0,0,0,.45);display:flex;flex-direction:column}
+.board-h{display:flex;justify-content:space-between;align-items:center;padding:2px 8px 12px}
+.board-h h2{font-size:clamp(16px,1.6vw,24px)}
+.board-h .prog{font-family:var(--head);font-size:13px;color:var(--gold2)}
+.grid{flex:1;display:grid;gap:12px;min-height:0}
+/* календар на картинці-будиночку: кожне віконце лягає на вікно будинку */
+.board.house{padding:0;background:var(--house) center/100% 100% no-repeat;box-shadow:none;border-radius:0;container-type:inline-size;
+  width:min(100%,calc((100vh - 66px) * var(--ar)));aspect-ratio:var(--ar);align-self:end;justify-self:center;display:block;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 5%,#000 95%,transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 5%,#000 95%,transparent 100%)}
+.board.house .grid{position:absolute;inset:0;display:block}
+.board.house .door{position:absolute;border-radius:3px}
+.board.house .door .leaf,.board.house .door .in{border-radius:3px}
+.board.house .door .leaf:before{inset:3px;border-radius:2px}
+.board.house .door .leaf:after{right:5px;width:5px;height:5px}
+.board.house .door .leaf .num{font-size:3.3cqw}
+.board.house .door .leaf .orn{font-size:1.05cqw;top:3px!important;left:5px!important}
+.board.house .door .in .e{font-size:2.7cqw}
+.board.house .door .in .who{font-size:1cqw}
+.board.house .door .in .nn{font-size:.85cqw;top:2px;left:4px}
+.house-tag{position:absolute;left:50%;bottom:1%;transform:translateX(-50%);background:rgba(14,42,34,.88);color:var(--cream);border:1px solid rgba(212,168,75,.6);border-radius:999px;padding:.5cqw 1.6cqw;font-family:var(--head);font-size:1.15cqw;white-space:nowrap}
+.house-tag b{color:var(--gold2)}
+.door{position:relative;perspective:900px;border-radius:12px;min-height:0}
+.door .in{position:absolute;inset:0;border-radius:12px;background:radial-gradient(circle at 50% 40%,#fff8e6,#e9d8b4);color:var(--pine);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-shadow:inset 0 6px 16px rgba(0,0,0,.35);padding:4px;text-align:center;overflow:hidden}
+.door .in .e{font-size:clamp(20px,2.6vw,40px)}
+.door .in .who{font-family:var(--head);font-size:clamp(9px,.8vw,12px);font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.door .in .nn{position:absolute;top:5px;left:8px;font-family:var(--head);font-size:11px;opacity:.5}
+.door .leaf{position:absolute;inset:0;border-radius:12px;transform-origin:left center;transition:transform 1s cubic-bezier(.3,.1,.2,1),box-shadow 1s;backface-visibility:hidden;cursor:pointer;display:grid;place-items:center;overflow:hidden;
+  box-shadow:0 6px 0 rgba(0,0,0,.28),inset 0 0 0 3px rgba(255,255,255,.12)}
+.door .leaf:after{content:"";position:absolute;right:9px;top:50%;width:8px;height:8px;border-radius:50%;background:var(--gold2);box-shadow:0 0 6px rgba(242,210,126,.9)}
+.door .leaf:before{content:"";position:absolute;inset:7px;border-radius:8px;border:1.5px dashed rgba(255,255,255,.28)}
+.door .leaf .num{font-family:var(--head);font-weight:800;font-size:clamp(24px,3.4vw,56px);text-shadow:0 3px 0 rgba(0,0,0,.25);position:relative}
+.door .leaf .orn{position:absolute;font-size:clamp(12px,1.2vw,18px);opacity:.75}
+.door:hover .leaf{transform:rotateY(-12deg)}
+.door.open .leaf,.door.opening .leaf{transform:rotateY(-108deg);box-shadow:0 0 0 rgba(0,0,0,0)}
+.door.open .leaf{pointer-events:none}
+.door.locked .leaf{cursor:default}
+.door.locked:hover .leaf{transform:none}
+.c0 .leaf{background:linear-gradient(150deg,#C8433F,#8E2422);color:#fff}
+.c1 .leaf{background:linear-gradient(150deg,#2E7357,#174634);color:#fff}
+.c2 .leaf{background:linear-gradient(150deg,#F2D27E,#C99B3E);color:#4a3308}
+.c3 .leaf{background:linear-gradient(150deg,#FBF4E6,#E5D5B6);color:#7A1F2B}
+.c4 .leaf{background:linear-gradient(150deg,#8E2A3A,#561522);color:#F2D27E}
+.c5 .leaf{background:linear-gradient(150deg,#245D74,#163C4B);color:#fff}
+.side{display:flex;flex-direction:column;align-items:center;gap:12px;min-height:0;text-align:center}
+.side .eyebrow{margin-top:2px}
+.wheel-box{position:relative;width:min(100%,46vh,420px);aspect-ratio:1;flex:none}
+.wheel-box .rot{width:100%;height:100%;will-change:transform}
+.wheel-box .rot svg{width:100%;height:100%;display:block;filter:drop-shadow(0 18px 30px rgba(0,0,0,.45))}
+.wheel-box .ptr{position:absolute;left:50%;top:-14px;transform:translateX(-50%);width:0;height:0;border-left:17px solid transparent;border-right:17px solid transparent;border-top:34px solid var(--gold2);filter:drop-shadow(0 4px 4px rgba(0,0,0,.5));z-index:2}
+.wheel-box .hub{position:absolute;left:50%;top:50%;width:17%;height:17%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3c7,var(--gold) 60%,#8a6420);display:grid;place-items:center;font-size:clamp(16px,2vw,28px);box-shadow:0 4px 12px rgba(0,0,0,.4);z-index:2}
+.wheel-empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:20%;font-weight:700;opacity:.7}
+.res{min-height:84px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.res .nm{font-family:var(--head);font-weight:800;font-size:clamp(22px,2.6vw,40px);color:var(--gold2);animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
+.res .hint{font-size:15px;opacity:.85}
+.mini-qr{display:flex;align-items:center;gap:12px;background:rgba(0,0,0,.2);border-radius:14px;padding:8px 14px 8px 8px;margin-top:auto;font-size:13px;text-align:left;cursor:pointer}
+.mini-qr #qr2{background:var(--cream);padding:5px;border-radius:8px}
+.mini-qr #qr2 img,.mini-qr #qr2 canvas{width:min(15vh,130px)!important;height:min(15vh,130px)!important}
+.mini-qr{font-size:15px}
+.qrbig{background:var(--cream);color:var(--pine);border-radius:28px;padding:30px 34px;text-align:center;animation:cardIn .45s;display:grid;gap:14px;justify-items:center}
+.qrbig h3{font-size:clamp(22px,2.4vw,34px)}
+.qrbig #qr3 img,.qrbig #qr3 canvas{width:min(58vh,440px)!important;height:min(58vh,440px)!important}
+.qrbig .cnt{font-weight:800;font-size:18px}
+
+/* картка завдання */
+.ov{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:30px;background:rgba(5,16,12,.72);backdrop-filter:blur(6px)}
+.ov.show{display:flex}
+.card{width:min(1040px,94vw);max-height:92vh;overflow:auto;background:var(--cream);color:var(--ink);border-radius:30px;padding:clamp(24px,3vw,46px);position:relative;box-shadow:0 40px 90px rgba(0,0,0,.5);animation:cardIn .6s cubic-bezier(.2,1.3,.4,1)}
+@keyframes cardIn{from{transform:scale(.6) rotate(-4deg);opacity:0}to{transform:none;opacity:1}}
+.card:before{content:"";position:absolute;inset:10px;border-radius:22px;border:2px dashed rgba(122,31,43,.25);pointer-events:none}
+.card-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+.badge{display:inline-flex;align-items:center;gap:8px;color:#fff;border-radius:999px;padding:9px 16px;font-family:var(--head);font-size:clamp(12px,1vw,15px);font-weight:600}
+.card .wn{font-family:var(--head);font-size:clamp(12px,1vw,15px);opacity:.55}
+.card .for{font-size:clamp(16px,1.5vw,22px);font-weight:800;margin-bottom:8px}
+.card .for b{color:var(--red);font-family:var(--head)}
+.card h2{font-size:clamp(28px,3.4vw,54px);color:var(--pine);margin-bottom:16px}
+.card .txt{font-size:clamp(18px,1.75vw,27px);line-height:1.45;font-weight:500;white-space:pre-line}
+.card .pic{max-width:100%;max-height:34vh;border-radius:16px;margin-top:16px;display:block}
+.card .ans{margin-top:18px;background:#fff;border-left:6px solid var(--gold);border-radius:12px;padding:14px 18px;font-size:clamp(16px,1.5vw,22px);font-weight:700;white-space:pre-line;animation:pop .4s}
+.card .ans span{display:block;font-family:var(--head);font-size:11px;letter-spacing:2px;color:var(--wine);margin-bottom:4px}
+.card .acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px;align-items:center}
+.card .acts .btn{box-shadow:0 5px 0 rgba(0,0,0,.18)}
+.card .acts .btn.light{background:#e9dfcb;color:var(--pine)}
+.card .acts .sp{flex:1}
+.timer{display:flex;align-items:center;gap:14px;margin-top:20px}
+.timer .t{font-family:var(--head);font-weight:800;font-size:clamp(30px,3.4vw,52px);color:var(--pine);min-width:3.2ch}
+.timer .bar{flex:1;height:14px;border-radius:999px;background:#e5d9c2;overflow:hidden}
+.timer .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--gold));border-radius:999px;transition:width .25s linear}
+.timer.low .t{color:var(--red)}
+.timer.low .bar i{background:var(--red)}
+
+/* фінал */
+.end{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:16px}
+.end h1{font-size:clamp(40px,5.4vw,86px);background:linear-gradient(180deg,#fff,var(--gold2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.end .list{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:1200px;max-height:46vh;overflow:auto;margin-top:12px}
+.end .it{background:rgba(246,239,226,.1);border:1px solid rgba(246,239,226,.2);border-radius:14px;padding:10px 14px;font-size:14px;text-align:left}
+.end .it b{font-family:var(--head);color:var(--gold2);margin-right:6px}
+
+/* модальне вікно ведучого */
+.dlg{background:var(--cream);color:var(--ink);border-radius:24px;padding:30px;width:min(560px,92vw);display:grid;gap:12px;animation:cardIn .4s}
+.dlg h3{color:var(--pine);font-size:22px;margin-bottom:6px}
+.dlg p{opacity:.75;margin-bottom:6px}
+.dlg .btn{width:100%}
+
+/* ============ ТЕЛЕФОН УЧАСНИКА ============ */
+body.player{overflow:auto}
+.ph{min-height:100%;max-width:520px;margin:0 auto;padding:22px 18px 40px;display:flex;flex-direction:column;gap:18px}
+.ph-head{display:flex;align-items:center;gap:10px}
+.ph-head .logo{font-size:15px}
+.ph-hero{text-align:center;padding:16px 0 4px}
+.ph-hero .big{font-size:64px;line-height:1;margin-bottom:10px;animation:floaty 3s ease-in-out infinite}
+@keyframes floaty{50%{transform:translateY(-8px) rotate(4deg)}}
+.ph-hero h1{font-size:28px;margin:8px 0 10px;color:var(--gold2)}
+.ph-hero p{opacity:.85;line-height:1.5}
+.ph form{display:grid;gap:12px}
+.ph input.nick{width:100%;border-radius:16px;border:2px solid rgba(246,239,226,.25);background:rgba(0,0,0,.25);color:var(--cream);padding:18px;font-size:20px;font-weight:700;text-align:center;outline:none}
+.ph input.nick:focus{border-color:var(--gold)}
+.ph .btn{width:100%;padding:18px;font-size:16px}
+.ph-card{background:rgba(246,239,226,.08);border:1px solid rgba(246,239,226,.16);border-radius:22px;padding:20px;text-align:center}
+.ph-card.me{background:linear-gradient(160deg,var(--gold2),var(--gold));color:#3a2a08;border:0;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 10px rgba(242,210,126,.18)}}
+.ph-card h2{font-size:22px;margin-bottom:8px}
+.ph-card .muted{opacity:.75;font-size:14px}
+.ph .task{background:var(--cream);color:var(--ink);border-radius:22px;padding:22px;text-align:left}
+.ph .task h2{color:var(--pine);font-size:22px;margin:12px 0 10px}
+.ph .task .txt{font-size:17px;line-height:1.5;white-space:pre-line}
+.ph .task .ans{margin-top:14px;background:#fff;border-left:5px solid var(--gold);border-radius:10px;padding:12px;font-weight:700;white-space:pre-line}
+.ph .wheel-box{width:min(100%,330px);margin:0 auto}
+.ph .chips{background:transparent;border:0;padding:0;justify-content:center}
+.ph .chip{font-size:13px;padding:6px 12px}
+.ph .chip.mine{background:var(--gold);color:var(--pine)}
+.ph .foot{text-align:center;font-size:13px;opacity:.6;margin-top:auto}
+.ph .foot a{color:var(--cream)}
+.prog-bar{height:10px;border-radius:999px;background:rgba(246,239,226,.12);overflow:hidden;margin-top:10px}
+.prog-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--red),var(--gold))}
+.bad{height:100%;display:grid;place-items:center;text-align:center;padding:30px}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:80}
+.btn.light{background:#e9dfcb;color:var(--pine)}
+.btn.big{font-size:18px;padding:20px}
+/* пульт ведучої на телефоні */
+.pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.pw{background:rgba(246,239,226,.12);border:1px solid rgba(246,239,226,.22);color:var(--cream);border-radius:12px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;min-height:58px;font-family:var(--body)}
+.pw b{font-family:var(--head);font-size:20px}
+.pw span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pw.done{opacity:.38}
+.pw.cur{background:var(--gold);color:var(--pine);opacity:1}
+.pw:not(:disabled):active{transform:scale(.94)}
+.pacts{display:grid;gap:8px;margin-top:16px}
+.ph .pacts .btn{padding:14px}
+.ptools{display:grid;gap:10px}
+.pvol{display:grid;gap:8px}
+.pvol input{accent-color:var(--gold);width:100%}
+#tapHint{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--gold);color:var(--pine);padding:14px 22px;border-radius:999px;font-family:var(--head);font-size:16px;z-index:90;box-shadow:0 10px 30px rgba(0,0,0,.4);display:none;cursor:pointer}
+</style>
+</head>
+<body>
+<canvas id="snow"></canvas>
+<canvas id="confetti"></canvas>
+<div id="app"></div>
+<div class="ov" id="ov"></div>
+<div class="ov" id="dlg"></div>
+<audio id="bgm" preload="none"></audio>
+<div id="toast"></div>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script>
+/* ===== Адвент-календар: версія для GitHub Pages + Firebase =====
+   Стан гри живе у Firebase Realtime Database (вузол advent/), тому зміни доходять до телефонів миттєво.
+   «Мозок» гри (функції hostAction з Code.js) працює на екрані ведучої (?screen=КЛЮЧ).
+   Apps Script лишається для таблиці: налаштування й віконця, музика, журнали.
+   Цей файл вставляє в сторінку скрипт github_збірка.js. */
+(function () {
+  const API = "https://script.google.com/macros/s/AKfycbz1A_4m3VQsMrQNES0X1awrkfIizHPNDQrG9jsBL-YoXlHd8fQE51oEvw8Rx0loq7_W/exec";                 // адреса Apps Script
+  const FB = {"apiKey":"AIzaSyDePWs_XcksqmA2XAfi94u4xE_zVQJUTyA","authDomain":"valid-complex-494210-i3.firebaseapp.com","databaseURL":"https://valid-complex-494210-i3-default-rtdb.europe-west1.firebasedatabase.app","projectId":"valid-complex-494210-i3","storageBucket":"valid-complex-494210-i3.firebasestorage.app","messagingSenderId":"830130192536","appId":"1:830130192536:web:40c9929a94559d6e4310ed"};            // налаштування Firebase
+  const GAME = "\r\nconst MODE = window.__MODE;\r\nconst CFG = window.__CFG;\r\nconst IS_SCREEN = MODE === 'screen';\r\nconst IS_PULT = MODE === 'pult';\r\nconst SPIN_MS = 6500;\r\nconst $ = s => document.querySelector(s);\r\nconst esc = s => String(s == null ? '' : s).replace(/[&\u003c>\"']/g, c => ({ '&': '&amp;', '\u003c': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[c]));\r\nlet S = null, VER = '', OFF = 0;\r\nconst serverNow = () => Date.now() + OFF;\r\nfunction toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), 3200); }\r\nif (CFG.bg) { document.body.classList.add('has-bg'); document.body.style.setProperty('--bgimg', 'url(\"' + CFG.bg.replace(/\"/g, '') + '\")'); }\r\n\r\n/* Категорії віконець: значок і колір */\r\nconst CATS = {\r\n  'фант': ['🎭', '#B3322F'], 'питання': ['🧠', '#245D74'], 'міні-гра': ['🎮', '#6B4FA0'], 'кіно': ['🎬', '#7A1F2B'],\r\n  'мультик': ['🦌', '#C0702A'], 'серіал': ['📺', '#1F5A45'], 'активність': ['🤝', '#2E7357'], 'хто з нас?': ['👀', '#A3427A'], 'сюрприз': ['🎁', '#B8892E']\r\n};\r\nfunction catOf(w) { const c = CATS[String(w.cat || '').toLowerCase()] || ['✨', '#7A1F2B']; return { e: w.emoji || c[0], color: c[1], name: w.cat || 'Сюрприз' }; }\r\n\r\n/* ================= ЗВ'ЯЗОК ІЗ СЕРВЕРОМ ================= */\r\nfunction call(fn, ...args) {\r\n  return new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(rej)[fn](...args));\r\n}\r\nfunction apply(r) {\r\n  if (!r) return;\r\n  if (r.now) { const o = r.now - Date.now(); OFF = OFF ? OFF * 0.7 + o * 0.3 : o; }\r\n  if (r.s) { const prev = S; S = r.s; VER = r.ver; if (IS_SCREEN) screenFx(prev, S); render(); }\r\n}\r\nlet polling = false;\r\nfunction poll() {\r\n  if (polling) return;\r\n  polling = true;\r\n  call('getState', VER).then(r => { polling = false; apply(r); }).catch(() => { polling = false; });\r\n}\r\nfunction act(action, p) {\r\n  return call('hostAction', CFG.key, action, p || {}).then(r => { apply(r); return r; })\r\n    .catch(e => { toast('⚠️ ' + (e && e.message || e)); poll(); throw e; });\r\n}\r\nsetInterval(poll, IS_SCREEN || IS_PULT ? 1500 : 2000);\r\n/* Екран помічає дії, зроблені з пульта: двері відчиняються зі звуком, після «Виконано» — конфеті */\r\nfunction screenFx(prev, s) {\r\n  if (!prev || prev.gameId !== s.gameId) return;\r\n  const c = s.current, pc = prev.current;\r\n  if (c && (!pc || pc.at !== c.at) && !doorBusy) {\r\n    doorBusy = c.n; sfxDoor();\r\n    setTimeout(() => { doorBusy = ''; render(); }, 1000);\r\n  }\r\n  if (Object.keys(s.opened || {}).length > Object.keys(prev.opened || {}).length) { sfxChime(); confetti(); }\r\n}\r\n\r\n/* ================= КОЛЕСО ФОРТУНИ ================= */\r\nconst WCOL = ['#B3322F', '#1F5A45', '#D4A84B', '#F6EFE2', '#7A1F2B', '#245D74'];\r\nfunction eligible(s) {\r\n  if (!s.players.length) return [];\r\n  const left = CFG.noRepeat ? s.players.filter(p => s.done.indexOf(p.id) \u003c 0) : s.players;\r\n  return left.length ? left : s.players;\r\n}\r\nfunction wheelSVG(list) {\r\n  const n = list.length;\r\n  if (!n) return '\u003csvg viewBox=\"-100 -100 200 200\">\u003ccircle r=\"97\" fill=\"#1F5A45\" stroke=\"#D4A84B\" stroke-width=\"4\"/>\u003c/svg>';\r\n  const seg = 360 / n, R = 96;\r\n  const pt = a => { const r = (a - 90) * Math.PI / 180; return [(R * Math.cos(r)).toFixed(2), (R * Math.sin(r)).toFixed(2)]; };\r\n  const fs = Math.max(5, Math.min(11, 150 / n + 2));\r\n  let out = '\u003csvg viewBox=\"-100 -100 200 200\">\u003ccircle r=\"99\" fill=\"#2a120c\"/>';\r\n  list.forEach((p, i) => {\r\n    let col = WCOL[i % WCOL.length];\r\n    if (n > 1 && i === n - 1 && n % WCOL.length === 1) col = WCOL[2];\r\n    const txt = col === '#F6EFE2' || col === '#D4A84B' ? '#3a1a10' : '#fff';\r\n    const a0 = i * seg, a1 = (i + 1) * seg, [x0, y0] = pt(a0), [x1, y1] = pt(a1);\r\n    out += n === 1 ? '\u003ccircle r=\"' + R + '\" fill=\"' + col + '\"/>'\r\n      : '\u003cpath d=\"M0 0 L' + x0 + ' ' + y0 + ' A' + R + ' ' + R + ' 0 ' + (seg > 180 ? 1 : 0) + ' 1 ' + x1 + ' ' + y1 + 'Z\" fill=\"' + col + '\" stroke=\"rgba(0,0,0,.18)\" stroke-width=\".6\"/>';\r\n    const mid = a0 + seg / 2, name = p.name.length > 13 ? p.name.slice(0, 12) + '…' : p.name;\r\n    out += '\u003ctext transform=\"rotate(' + (mid - 90) + ') translate(' + (R - 8) + ' 0)\" text-anchor=\"end\" dominant-baseline=\"middle\" font-family=\"Unbounded,sans-serif\" font-weight=\"600\" font-size=\"' + fs + '\" fill=\"' + txt + '\">' + esc(name) + '\u003c/text>';\r\n  });\r\n  for (let i = 0; i \u003c Math.min(n, 60); i++) { const [x, y] = pt(i * seg); out += '\u003ccircle cx=\"' + x + '\" cy=\"' + y + '\" r=\"2.2\" fill=\"#F2D27E\"/>'; }\r\n  return out + '\u003ccircle r=\"97\" fill=\"none\" stroke=\"#D4A84B\" stroke-width=\"3\"/>\u003c/svg>';\r\n}\r\nfunction finalAngle(sp) {\r\n  const seg = 360 / sp.list.length;\r\n  return 360 * 8 - (sp.idx + 0.5) * seg + (sp.turn - 0.5) * seg * 0.7;\r\n}\r\nconst SPUN = {};  // які обертання вже доїхали до кінця на цьому пристрої\r\nfunction spinFinished(sp) { return !!(sp && SPUN[sp.at]); }\r\nfunction renderWheel(box, s) {\r\n  if (!box) return;\r\n  const list = s.spin ? s.spin.list : eligible(s);\r\n  const sig = (s.spin ? 'S' + s.spin.at : 'L') + '|' + list.map(p => p.id + ':' + p.name).join(',');\r\n  if (box.dataset.sig === sig) return;\r\n  box.dataset.sig = sig;\r\n  box.innerHTML = '\u003cdiv class=\"ptr\">\u003c/div>\u003cdiv class=\"rot\">' + wheelSVG(list) + '\u003c/div>\u003cdiv class=\"hub\">⭐\u003c/div>'\r\n    + (list.length ? '' : '\u003cdiv class=\"wheel-empty\">' + (IS_SCREEN ? 'Тут з’являться імена учасників' : 'Чекаємо на учасників') + '\u003c/div>');\r\n  const rot = box.querySelector('.rot'), sp = s.spin;\r\n  if (!sp) return;\r\n  const target = finalAngle(sp), left = SPIN_MS - (serverNow() - sp.at);\r\n  if (SPUN[sp.at] || left \u003c 700) { rot.style.transform = 'rotate(' + target + 'deg)'; SPUN[sp.at] = true; return; }\r\n  const dur = Math.max(1500, left);\r\n  rot.style.transform = 'rotate(' + (target - 360 * 8 + (dur \u003c SPIN_MS * 0.6 ? 360 * 3 : 0)) % 360 + 'deg)';\r\n  void rot.offsetWidth;\r\n  rot.style.transition = 'transform ' + dur + 'ms cubic-bezier(.12,.72,.08,1)';\r\n  rot.style.transform = 'rotate(' + target + 'deg)';\r\n  if (IS_SCREEN) tickSounds(dur);\r\n  setTimeout(() => {\r\n    SPUN[sp.at] = true;\r\n    if (S && S.spin && S.spin.at === sp.at) {\r\n      if (IS_SCREEN) { sfxChime(); confetti(); }\r\n      else if (ME && sp.pid === ME.id) { try { navigator.vibrate && navigator.vibrate([200, 100, 200, 100, 400]); } catch (e) {} confetti(); }\r\n    }\r\n    render();\r\n  }, dur + 80);\r\n}\r\n\r\n/* ================= ЗВУКИ (без файлів) ================= */\r\nlet AC = null;\r\nfunction ac() { try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); } catch (e) {} return AC; }\r\nfunction beep(f, t, d, type, g) {\r\n  const a = ac(); if (!a) return;\r\n  const o = a.createOscillator(), v = a.createGain();\r\n  o.type = type || 'sine'; o.frequency.value = f;\r\n  v.gain.setValueAtTime(0, a.currentTime + t); v.gain.linearRampToValueAtTime(g || .18, a.currentTime + t + .01);\r\n  v.gain.exponentialRampToValueAtTime(.0001, a.currentTime + t + d);\r\n  o.connect(v).connect(a.destination); o.start(a.currentTime + t); o.stop(a.currentTime + t + d + .05);\r\n}\r\nfunction tickSounds(dur) { let t = 0, step = 0.045; while (t \u003c dur / 1000 - 0.2) { beep(1800, t, .03, 'square', .05); t += step; step *= 1.075; } }\r\nfunction sfxChime() { [784, 988, 1175, 1568].forEach((f, i) => beep(f, i * .11, .7, 'triangle', .16)); }\r\nfunction sfxDoor() { beep(220, 0, .25, 'sawtooth', .04); beep(330, .12, .3, 'triangle', .1); [1047, 1319, 1568].forEach((f, i) => beep(f, .35 + i * .08, .5, 'sine', .12)); }\r\nfunction sfxEnd() { beep(523, 0, .2, 'square', .08); beep(392, .25, .5, 'square', .08); }\r\n\r\n/* ================= КОНФЕТІ Й СНІГ ================= */\r\nfunction confetti() {\r\n  const c = $('#confetti'), x = c.getContext('2d');\r\n  c.width = innerWidth; c.height = innerHeight;\r\n  const cols = ['#F2D27E', '#B3322F', '#F6EFE2', '#2E7357', '#D4A84B'];\r\n  const P = Array.from({ length: 160 }, () => ({ x: innerWidth / 2 + (Math.random() - .5) * 200, y: innerHeight / 2.4, vx: (Math.random() - .5) * 16, vy: -Math.random() * 15 - 4, r: Math.random() * 6 + 4, c: cols[Math.random() * 5 | 0], a: Math.random() * 6, va: (Math.random() - .5) * .3 }));\r\n  let f = 0;\r\n  (function fr() {\r\n    x.clearRect(0, 0, c.width, c.height);\r\n    P.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += .38; p.vx *= .99; p.a += p.va; x.save(); x.translate(p.x, p.y); x.rotate(p.a); x.fillStyle = p.c; x.fillRect(-p.r / 2, -p.r / 4, p.r, p.r / 2); x.restore(); });\r\n    if (++f \u003c 170) requestAnimationFrame(fr); else x.clearRect(0, 0, c.width, c.height);\r\n  })();\r\n}\r\n(function snow() {\r\n  const c = $('#snow'), x = c.getContext('2d');\r\n  let F = [];\r\n  const size = () => { c.width = innerWidth; c.height = innerHeight; F = Array.from({ length: IS_SCREEN ? 110 : 45 }, () => ({ x: Math.random() * innerWidth, y: Math.random() * innerHeight, r: Math.random() * 2.4 + .6, s: Math.random() * .6 + .25, w: Math.random() * 6.28 })); };\r\n  size(); addEventListener('resize', size);\r\n  (function fr() {\r\n    x.clearRect(0, 0, c.width, c.height); x.fillStyle = 'rgba(255,255,255,.75)';\r\n    F.forEach(f => { f.y += f.s; f.w += .01; f.x += Math.sin(f.w) * .3; if (f.y > c.height + 5) { f.y = -5; f.x = Math.random() * c.width; } x.beginPath(); x.arc(f.x, f.y, f.r, 0, 6.28); x.fill(); });\r\n    requestAnimationFrame(fr);\r\n  })();\r\n})();\r\n\r\n/* ================= QR-КОД ================= */\r\nfunction drawQR(id, size) {\r\n  const el = document.getElementById(id);\r\n  if (!el || el.dataset.done || !window.QRCode || !CFG.url) return;\r\n  el.dataset.done = 1; el.innerHTML = '';\r\n  new QRCode(el, { text: CFG.url, width: size, height: size, colorDark: '#0E2A22', colorLight: '#F6EFE2', correctLevel: QRCode.CorrectLevel.M });\r\n}\r\n\r\n/* ================= ТАЙМЕР ЗАВДАННЯ ================= */\r\nlet timerBeeped = 0;\r\nfunction timerHtml(c) {\r\n  if (!c || !c.timer) return '';\r\n  return '\u003cdiv class=\"timer\" id=\"timer\">\u003cdiv class=\"t\">' + fmt(c.timer) + '\u003c/div>\u003cdiv class=\"bar\">\u003ci style=\"width:100%\">\u003c/i>\u003c/div>\u003c/div>';\r\n}\r\nfunction fmt(sec) { sec = Math.max(0, Math.ceil(sec)); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); }\r\nsetInterval(() => {\r\n  const el = $('#timer'), c = S && S.current;\r\n  if (!el || !c || !c.timer) return;\r\n  let left = c.timer;\r\n  if (c.timerAt) left = Math.min(c.timer, c.timer - (serverNow() - c.timerAt) / 1000);\r\n  left = Math.max(0, left);\r\n  el.querySelector('.t').textContent = c.timerAt && left \u003c= 0 ? '⏰ Час!' : fmt(left);\r\n  el.querySelector('.bar i').style.width = (left / c.timer * 100) + '%';\r\n  el.classList.toggle('low', !!c.timerAt && left \u003c= 10);\r\n  if (IS_SCREEN && c.timerAt && left \u003c= 0 && timerBeeped !== c.timerAt) { timerBeeped = c.timerAt; sfxEnd(); }\r\n}, 250);\r\n\r\n/* ================= ЕКРАН ВЕДУЧОГО ================= */\r\nconst ORN = ['❄', '★', '✦', '🎄', '🔔', '🎁'];\r\nlet doorBusy = '';\r\nfunction render() { if (MODE === 'badkey') return renderBad(); IS_SCREEN ? renderScreen() : IS_PULT ? renderPult() : renderPlayer(); }\r\nfunction renderBad() {\r\n  $('#app').innerHTML = '\u003cdiv class=\"bad\">\u003cdiv>\u003cdiv style=\"font-size:60px\">🔒\u003c/div>\u003ch2 style=\"margin:14px 0\">Неправильне посилання ведучого\u003c/h2>\u003cp style=\"opacity:.8\">Перевірте ключ на аркуші «Налаштування».\u003c/p>\u003c/div>\u003c/div>';\r\n}\r\nfunction patch(el, sig, html) { if (el && el.dataset.sig !== sig) { el.dataset.sig = sig; el.innerHTML = html; return true; } return false; }\r\n\r\nfunction topBar() {\r\n  return '\u003cheader class=\"top\">\u003cdiv class=\"logo\">\u003cdiv class=\"star\">★\u003c/div>' + esc(CFG.title) + '\u003c/div>\u003cdiv class=\"sp\">\u003c/div>'\r\n    + '\u003cdiv class=\"pill\" id=\"pCount\">\u003c/div>'\r\n    + (CFG.music ? '\u003cdiv id=\"volBox\">\u003cbutton onclick=\"toggleMusic()\" title=\"Увімкнути / вимкнути музику\">🎵\u003c/button>\u003cinput type=\"range\" min=\"0\" max=\"100\" value=\"' + musicVol() + '\" oninput=\"setVol(this.value)\" title=\"Гучність музики\">\u003cspan class=\"v\">\u003c/span>\u003c/div>' : '')\r\n    + '\u003cbutton class=\"icon-btn\" title=\"Показати QR-код для нових учасників\" onclick=\"showQR()\">📱\u003c/button>'\r\n    + '\u003cbutton class=\"icon-btn\" title=\"Завершити гру\" onclick=\"askEnd()\">🏁\u003c/button>'\r\n    + '\u003cbutton class=\"icon-btn\" title=\"Почати гру спочатку\" onclick=\"askReset()\">⟲\u003c/button>\u003c/header>';\r\n}\r\nfunction renderScreen() {\r\n  const app = $('#app');\r\n  if (app.dataset.phase !== S.phase) {\r\n    app.dataset.phase = S.phase;\r\n    if (S.phase === 'reg') app.innerHTML = topBar() + '\u003cdiv class=\"stage\">\u003cdiv class=\"reg\">'\r\n      + '\u003csection>\u003cdiv class=\"eyebrow\">Новорічні активності команди\u003c/div>\u003ch1>' + esc(CFG.title) + '\u003c/h1>\u003cdiv class=\"sub\">' + esc(CFG.subtitle) + '\u003c/div>'\r\n      + '\u003cdiv class=\"steps\">\u003cdiv>\u003cb>1\u003c/b>Наведи камеру телефона на QR-код\u003c/div>\u003cdiv>\u003cb>2\u003c/b>Впиши свій нікнейм\u003c/div>\u003cdiv>\u003cb>3\u003c/b>Чекай, кого обере колесо фортуни 🎡\u003c/div>\u003c/div>\u003c/section>'\r\n      + '\u003cdiv class=\"qr-card\">\u003cdiv id=\"qr\">\u003c/div>\u003cdiv class=\"url\">' + esc(CFG.url) + '\u003c/div>\u003c/div>'\r\n      + '\u003csection class=\"reg-side\">\u003ch3>У колесі вже \u003cspan class=\"cnt\" id=\"cnt\">0\u003c/span>\u003c/h3>\u003cdiv class=\"chips\" id=\"chips\">\u003c/div>'\r\n      + '\u003cform class=\"addf\" onsubmit=\"addPlayer();return false\">\u003cinput id=\"addName\" maxlength=\"22\" placeholder=\"Додати учасника вручну…\" autocomplete=\"off\">\u003cbutton class=\"btn ghost\" style=\"padding:10px 18px\">＋\u003c/button>\u003c/form>'\r\n      + '\u003cbutton class=\"btn gold\" onclick=\"act(\\'start\\')\">Відкрити календар 🎄\u003c/button>\u003c/section>\u003c/div>\u003c/div>';\r\n    else if (S.phase === 'calendar') app.innerHTML = topBar() + '\u003cdiv class=\"stage\">\u003cdiv class=\"cal\">'\r\n      + (HOUSE ? '\u003csection class=\"board house\" style=\"--house:url(&quot;' + esc(HOUSE.img) + '&quot;);--ar:' + HOUSE.r + '\">\u003cdiv class=\"grid\" id=\"grid\">\u003c/div>\u003cdiv class=\"house-tag\">🎄 ' + esc(CFG.subtitle || 'Адвент-календар') + ' · \u003cb id=\"prog\">\u003c/b>\u003c/div>\u003c/section>'\r\n        : '\u003csection class=\"board\">\u003cdiv class=\"board-h\">\u003ch2>🎄 ' + esc(CFG.subtitle || 'Адвент-календар') + '\u003c/h2>\u003cdiv class=\"prog\" id=\"prog\">\u003c/div>\u003c/div>\u003cdiv class=\"grid\" id=\"grid\">\u003c/div>\u003c/section>')\r\n      + '\u003caside class=\"side\">\u003cdiv class=\"eyebrow\">Колесо фортуни\u003c/div>\u003cdiv class=\"wheel-box\" id=\"wheel\">\u003c/div>\u003cdiv class=\"res\" id=\"res\">\u003c/div>\u003cdiv id=\"spinBtn\">\u003c/div>'\r\n      + '\u003cdiv class=\"mini-qr\" onclick=\"showQR()\" title=\"Показати великий QR-код\">\u003cdiv id=\"qr2\">\u003c/div>\u003cdiv>\u003cb>Ще не в колесі?\u003c/b>\u003cbr>Скануй і впиши нікнейм\u003c/div>\u003c/div>\u003c/aside>\u003c/div>\u003c/div>';\r\n    else app.innerHTML = topBar() + '\u003cdiv class=\"stage\">\u003cdiv class=\"end\" id=\"end\">\u003c/div>\u003c/div>';\r\n    if (S.phase === 'end') { confetti(); setTimeout(confetti, 900); }\r\n    initVol();\r\n  }\r\n  document.body.classList.toggle('house-on', !!HOUSE && S.phase === 'calendar');\r\n  const pc = $('#pCount'); if (pc) pc.textContent = '👥 ' + S.players.length + ' в грі';\r\n  const qc = $('#qrCnt'); if (qc) qc.textContent = '👥 У колесі: ' + S.players.length;\r\n  if (S.phase === 'reg') {\r\n    drawQR('qr', 300);\r\n    $('#cnt').textContent = S.players.length;\r\n    patch($('#chips'), S.players.map(p => p.id + p.name).join(','), S.players.length\r\n      ? S.players.map(p => '\u003cspan class=\"chip\">' + esc(p.name) + '\u003cbutton class=\"x\" title=\"Прибрати\" onclick=\"removePlayer(\\'' + p.id + '\\')\">✕\u003c/button>\u003c/span>').join('')\r\n      : '\u003cdiv class=\"empty\">Тут з’являтимуться нікнейми учасників ✨\u003c/div>');\r\n  } else if (S.phase === 'calendar') {\r\n    drawQR('qr2', 260);\r\n    renderGrid();\r\n    renderWheel($('#wheel'), S);\r\n    renderSide();\r\n  } else renderEnd();\r\n  renderCard();\r\n  syncQR();\r\n  syncAudio();\r\n}\r\nconst HOUSE = IS_SCREEN && CFG.house && CFG.house.slots.length >= (CFG.windows || []).length ? CFG.house : null;\r\nif (HOUSE) { const im = new Image(); im.src = HOUSE.img; } // завантажуємо будиночок наперед\r\nfunction gridCols(n) { return n \u003c= 6 ? 3 : n \u003c= 12 ? 4 : n \u003c= 24 ? 6 : n \u003c= 32 ? 8 : 10; }\r\nfunction renderGrid() {\r\n  const g = $('#grid'), W = CFG.windows, cols = gridCols(W.length);\r\n  const sig = JSON.stringify(S.opened) + '|' + (S.current && S.current.n) + '|' + doorBusy + '|' + W.length;\r\n  if (g.dataset.sig === sig) return;\r\n  // змінюємо класи без перемальовування, щоб двері відчинялися плавно\r\n  if (!g.children.length) {\r\n    if (!HOUSE) {\r\n      g.style.gridTemplateColumns = 'repeat(' + cols + ',1fr)';\r\n      g.style.gridTemplateRows = 'repeat(' + Math.ceil(W.length / cols) + ',1fr)';\r\n    }\r\n    g.innerHTML = W.map((w, i) => {\r\n      const k = (i * 7 + Math.floor(i / cols) * 3) % 6;\r\n      const pos = HOUSE ? ' style=\"left:' + HOUSE.slots[i][0] + '%;top:' + HOUSE.slots[i][1] + '%;width:' + HOUSE.w + '%;height:' + HOUSE.h + '%\"' : '';\r\n      return '\u003cdiv class=\"door c' + k + '\"' + pos + ' data-n=\"' + esc(w.n) + '\" onclick=\"openDoor(this.dataset.n)\">\u003cdiv class=\"in\">\u003c/div>'\r\n        + '\u003cdiv class=\"leaf\">\u003cspan class=\"orn\" style=\"top:8px;left:10px\">' + ORN[i % 6] + '\u003c/span>\u003cspan class=\"num\">' + esc(w.n) + '\u003c/span>\u003c/div>\u003c/div>';\r\n    }).join('');\r\n  }\r\n  g.dataset.sig = sig;\r\n  [...g.children].forEach(d => {\r\n    const n = d.dataset.n, w = W.find(x => x.n === n), who = S.opened[n], cur = S.current && S.current.n === n;\r\n    d.classList.toggle('open', !!who || cur);\r\n    d.classList.toggle('opening', doorBusy === n);\r\n    d.classList.toggle('locked', !!S.current && !cur);\r\n    const inner = '\u003cspan class=\"nn\">' + esc(n) + '\u003c/span>\u003cspan class=\"e\">' + catOf(w).e + '\u003c/span>\u003cspan class=\"who\">' + esc(who || (cur ? (S.current.pname || 'Уся команда') : '')) + '\u003c/span>';\r\n    const inn = d.querySelector('.in'); if (inn.dataset.v !== inner) { inn.dataset.v = inner; inn.innerHTML = inner; }\r\n  });\r\n  const left = W.length - Object.keys(S.opened).length;\r\n  if (left === W.length) renderGrid.fin = false;\r\n  $('#prog').textContent = 'Відкрито ' + Object.keys(S.opened).length + ' з ' + W.length;\r\n  if (!left && !S.current && !renderGrid.fin) { renderGrid.fin = true; setTimeout(() => toast('Усі віконця відкрито! Тисніть 🏁, щоб завершити гру'), 600); }\r\n}\r\nfunction renderSide() {\r\n  const sp = S.spin, done = spinFinished(sp);\r\n  let res = '';\r\n  if (sp && !done) res = '\u003cdiv class=\"hint\">Колесо крутиться… 🥁\u003c/div>';\r\n  else if (sp && !sp.used) res = '\u003cdiv class=\"nm\">🎯 ' + esc(sp.name) + '\u003c/div>\u003cdiv class=\"hint\">Назви номер віконця — ведучий відкриє його\u003c/div>';\r\n  else if (!S.players.length) res = '\u003cdiv class=\"hint\">Учасники ще не приєдналися. Покажіть QR-код 👥\u003c/div>';\r\n  else res = '\u003cdiv class=\"hint\">Крутіть колесо, щоб обрати, хто відкриває наступне віконце\u003c/div>';\r\n  if (CFG.noRepeat && S.players.length) res += '\u003cdiv class=\"hint\" style=\"font-size:12px;opacity:.6\">У цьому колі ще не грали: ' + eligible(S).length + ' з ' + S.players.length + '\u003c/div>';\r\n  patch($('#res'), res, res);\r\n  const can = S.players.length && !S.current && (!sp || done);\r\n  const btn = '\u003cbutton class=\"btn red\" ' + (can ? '' : 'disabled') + ' onclick=\"spin()\">🎡 ' + (sp && !sp.used ? 'Крутити ще раз' : 'Крутити колесо') + '\u003c/button>';\r\n  patch($('#spinBtn'), btn, btn);\r\n}\r\nfunction spin() { ac(); act('spin'); }\r\nfunction openDoor(n) {\r\n  if (!S || S.current || S.opened[n] || doorBusy) return;\r\n  if (S.spin && !spinFinished(S.spin)) return toast('Зачекайте, колесо ще крутиться');\r\n  ac(); doorBusy = n; renderGrid(); sfxDoor();\r\n  const t0 = Date.now();\r\n  act('open', { n }).then(() => {\r\n    setTimeout(() => { doorBusy = ''; render(); }, Math.max(0, 900 - (Date.now() - t0)));\r\n  }).catch(() => { doorBusy = ''; renderGrid(); });\r\n}\r\nlet cardSig = '';\r\nfunction renderCard() {\r\n  const ov = $('#ov'), c = S.current;\r\n  const show = c && !doorBusy;\r\n  if (!show) { ov.classList.remove('show'); cardSig = ''; ov.innerHTML = ''; return; }\r\n  const sig = [c.n, c.at, c.reveal, c.timerAt].join('|');\r\n  if (sig === cardSig) return;\r\n  const first = !cardSig.startsWith(c.n + '|' + c.at);\r\n  cardSig = sig;\r\n  const k = catOf(c);\r\n  ov.innerHTML = '\u003cdiv class=\"card\" style=\"' + (first ? '' : 'animation:none') + '\">\u003cdiv class=\"card-top\">\u003cspan class=\"badge\" style=\"background:' + k.color + '\">' + k.e + ' ' + esc(k.name) + '\u003c/span>\u003cspan class=\"wn\">Віконце №' + esc(c.n) + '\u003c/span>\u003c/div>'\r\n    + '\u003cdiv class=\"for\">' + (c.pname ? 'Завдання для: \u003cb>' + esc(c.pname) + '\u003c/b>' : 'Для всієї команди 🎄') + '\u003c/div>'\r\n    + '\u003ch2>' + esc(c.title) + '\u003c/h2>\u003cdiv class=\"txt\">' + esc(c.text) + '\u003c/div>'\r\n    + (c.img ? '\u003cimg class=\"pic\" src=\"' + esc(c.img) + '\" alt=\"\">' : '')\r\n    + timerHtml(c)\r\n    + (c.reveal && c.answer ? '\u003cdiv class=\"ans\">\u003cspan>ВІДПОВІДЬ\u003c/span>' + esc(c.answer) + '\u003c/div>' : '')\r\n    + '\u003cdiv class=\"acts\">'\r\n    + (c.timer ? (c.timerAt ? '\u003cbutton class=\"btn light\" onclick=\"act(\\'timerStop\\')\">⏹ Скинути таймер\u003c/button>' : '\u003cbutton class=\"btn light\" onclick=\"act(\\'timer\\')\">⏱ Запустити таймер\u003c/button>') : '')\r\n    + (c.hasAnswer && !c.reveal ? '\u003cbutton class=\"btn light\" onclick=\"act(\\'reveal\\')\">💡 Показати відповідь\u003c/button>' : '')\r\n    + '\u003cspan class=\"sp\">\u003c/span>\u003cbutton class=\"btn ghost\" style=\"color:var(--pine);border-color:rgba(0,0,0,.2)\" onclick=\"act(\\'cancel\\')\" title=\"Віконце знову закриється\">↩ Закрити назад\u003c/button>'\r\n    + '\u003cbutton class=\"btn gold\" onclick=\"doneTask()\">✓ Виконано\u003c/button>\u003c/div>\u003c/div>';\r\n  ov.classList.add('show');\r\n}\r\nfunction doneTask() { act('done'); }\r\nfunction renderEnd() {\r\n  const W = CFG.windows, items = W.filter(w => S.opened[w.n]);\r\n  patch($('#end'), JSON.stringify(S.opened), '\u003cdiv style=\"font-size:70px\">🎄\u003c/div>\u003cdiv class=\"eyebrow\">Календар відкрито\u003c/div>\u003ch1>З Новим 2027 роком!\u003c/h1>'\r\n    + '\u003cdiv style=\"opacity:.85;font-size:18px\">Відкрито віконець: ' + items.length + ' з ' + W.length + ' · учасників: ' + S.players.length + '\u003c/div>'\r\n    + '\u003cdiv class=\"list\">' + items.map(w => '\u003cdiv class=\"it\">\u003cb>' + esc(w.n) + '\u003c/b>' + catOf(w).e + ' ' + esc(w.title) + ' — \u003ci>' + esc(S.opened[w.n]) + '\u003c/i>\u003c/div>').join('') + '\u003c/div>'\r\n    + '\u003cdiv style=\"display:flex;gap:10px;margin-top:10px\">\u003cbutton class=\"btn ghost\" onclick=\"act(\\'start\\')\">↩ Повернутися до календаря\u003c/button>\u003c/div>');\r\n}\r\nfunction addPlayer() { const i = $('#addName'), v = i.value.trim(); if (!v) return; i.value = ''; act('add', { name: v }); }\r\nfunction removePlayer(id) { act('remove', { id }); }\r\nfunction dlg(html) { const d = $('#dlg'); d.innerHTML = '\u003cdiv class=\"dlg\">' + html + '\u003c/div>'; d.classList.add('show'); d.onclick = e => { if (e.target === d) closeDlg(); }; }\r\nfunction closeDlg() { $('#dlg').classList.remove('show'); }\r\n/* Великий QR-код поверх гри: нові учасники приєднуються, гра не зупиняється.\r\n   Його можна показати й сховати і з екрана, і з пульта */\r\nlet qrLocalUntil = 0;\r\nfunction showQR() { qrLocalUntil = Date.now() + 4000; openQR(); act('qr', { on: true }).catch(() => {}); }\r\nfunction closeQR() { qrLocalUntil = Date.now() + 4000; closeDlg(); act('qr', { on: false }).catch(() => {}); }\r\nfunction qrOpen() { return !!document.querySelector('#dlg.show .qrbig'); }\r\nfunction syncQR() {\r\n  if (!IS_SCREEN || Date.now() \u003c qrLocalUntil) return;\r\n  if (S.showQR && !qrOpen()) openQR();\r\n  else if (!S.showQR && qrOpen()) closeDlg();\r\n}\r\nfunction openQR() {\r\n  const d = $('#dlg');\r\n  d.innerHTML = '\u003cdiv class=\"qrbig\">\u003cdiv class=\"eyebrow\" style=\"color:var(--wine)\">Приєднуйся до гри\u003c/div>\u003ch3>📱 Скануй і впиши нікнейм\u003c/h3>\u003cdiv id=\"qr3\">\u003c/div>'\r\n    + '\u003cdiv class=\"cnt\" id=\"qrCnt\">👥 У колесі: ' + (S ? S.players.length : 0) + '\u003c/div>'\r\n    + '\u003cdiv style=\"display:flex;gap:10px\">\u003cbutton class=\"btn gold\" onclick=\"closeQR()\">Готово, грати далі\u003c/button>'\r\n    + (S && S.phase !== 'reg' ? '\u003cbutton class=\"btn\" style=\"background:#e9dfcb\" onclick=\"closeQR();act(\\'reg\\')\">Екран реєстрації\u003c/button>' : '') + '\u003c/div>\u003c/div>';\r\n  d.classList.add('show'); d.onclick = e => { if (e.target === d) closeQR(); };\r\n  if (window.QRCode && CFG.url) new QRCode($('#qr3'), { text: CFG.url, width: 520, height: 520, colorDark: '#0E2A22', colorLight: '#F6EFE2', correctLevel: QRCode.CorrectLevel.M });\r\n}\r\nfunction askReset() {\r\n  dlg('\u003ch3>⟲ Почати гру спочатку?\u003c/h3>\u003cp>Оберіть, як саме:\u003c/p>'\r\n    + '\u003cbutton class=\"btn gold\" onclick=\"closeDlg();act(\\'reset\\',{keepPlayers:true}).then(()=>toast(\\'Готово: усі віконця знову закриті\\'))\">Закрити всі віконця, учасники лишаються\u003c/button>'\r\n    + '\u003cbutton class=\"btn red\" onclick=\"closeDlg();act(\\'reset\\',{keepPlayers:false}).then(()=>toast(\\'Готово: нова гра, учасники реєструються заново\\'))\">Нова гра з нуля (нова реєстрація)\u003c/button>'\r\n    + '\u003cbutton class=\"btn light\" style=\"background:#e9dfcb\" onclick=\"closeDlg()\">Скасувати\u003c/button>');\r\n}\r\nfunction askEnd() {\r\n  dlg('\u003ch3>🏁 Завершити гру?\u003c/h3>\u003cp>На екрані з’явиться фінальне привітання і список, хто що відкрив. Повернутися до календаря можна буде.\u003c/p>'\r\n    + '\u003cbutton class=\"btn gold\" onclick=\"closeDlg();act(\\'end\\')\">Так, завершити\u003c/button>\u003cbutton class=\"btn\" style=\"background:#e9dfcb\" onclick=\"closeDlg()\">Скасувати\u003c/button>');\r\n}\r\n\r\n/* ================= МУЗИКА (лише на екрані ведучого) ================= */\r\nlet musicOn = false, musicIdx = 0, musicKey = -1;\r\nconst MCACHE = {}, MLOAD = {};\r\nlet VOL = null;\r\ntry { const v = localStorage.getItem('advent_vol'); if (v !== null) VOL = +v; } catch (e) {}\r\nfunction musicVol() { return VOL !== null ? VOL : (+CFG.vol || 0); }\r\nfunction gain(v) { return Math.pow(Math.max(0, Math.min(100, v)) / 100, 1.6); }\r\nfunction loadTrack(i) {\r\n  if (MCACHE[i]) return Promise.resolve(MCACHE[i]);\r\n  if (!MLOAD[i]) MLOAD[i] = call('getMusic', i, 0).then(async first => {\r\n    if (!first || !first.total) return '';\r\n    if (first.url) return first.url;\r\n    let b64 = first.data;\r\n    for (let p = 1; p \u003c first.total; p++) b64 += (await call('getMusic', i, p)).data;\r\n    const bin = atob(b64), bytes = new Uint8Array(bin.length);\r\n    for (let j = 0; j \u003c bin.length; j++) bytes[j] = bin.charCodeAt(j);\r\n    return URL.createObjectURL(new Blob([bytes], { type: first.type || 'audio/mpeg' }));\r\n  }).then(src => (MCACHE[i] = src)).catch(e => { delete MLOAD[i]; throw e; });\r\n  return MLOAD[i];\r\n}\r\nfunction syncMusic() {\r\n  const a = $('#bgm');\r\n  a.volume = gain(musicVol());\r\n  if (!musicOn || !CFG.music) { a.pause(); updVol(); return; }\r\n  if (musicKey !== musicIdx) {\r\n    const k = musicKey = musicIdx;\r\n    a.loop = CFG.music \u003c= 1;\r\n    loadTrack(k).then(src => {\r\n      if (musicKey !== k || !src) return;\r\n      a.src = src; if (musicOn) a.play().catch(needTap);\r\n      if (CFG.music > 1) setTimeout(() => loadTrack((k + 1) % CFG.music).catch(() => {}), 5000);\r\n    }).catch(e => { musicKey = -1; toast('Музика не завантажилась: ' + (e && e.message || e)); });\r\n  } else if (a.paused && a.getAttribute('src')) a.play().catch(needTap);\r\n  updVol();\r\n}\r\n$('#bgm').addEventListener('ended', () => { musicIdx = (musicIdx + 1) % Math.max(1, CFG.music); syncMusic(); });\r\nfunction toggleMusic() { musicOn = !musicOn; musicStarted = true; syncMusic(); }\r\nfunction setVol(v) { VOL = +v; try { localStorage.setItem('advent_vol', String(VOL)); } catch (e) {} $('#bgm').volume = gain(VOL); if (VOL > 0 && !musicOn) { musicOn = true; musicStarted = true; syncMusic(); } updVol(); }\r\nfunction updVol() {\r\n  const b = $('#volBox'); if (!b) return;\r\n  b.querySelector('.v').textContent = musicOn ? musicVol() + '%' : 'вимк.';\r\n  b.querySelector('button').textContent = musicOn && musicVol() > 0 ? '🎵' : '🔇';\r\n}\r\nfunction initVol() { updVol(); }\r\n/* Телевізор не вмикає звук без натискання: просимо натиснути будь-де (OK на пульті ТВ) */\r\nfunction needTap(e) {\r\n  if (!e || e.name !== 'NotAllowedError') return;\r\n  let h = $('#tapHint');\r\n  if (!h) { h = document.createElement('div'); h.id = 'tapHint'; h.textContent = '🔊 Натисніть, щоб увімкнути музику'; document.body.appendChild(h); }\r\n  h.style.display = 'block';\r\n}\r\n/* Музику на екрані вмикають і гучність ставлять з пульта ведучої */\r\nlet audioSeen = 0;\r\nfunction syncAudio() {\r\n  if (!IS_SCREEN || !S || !S.audio || S.audio.at === audioSeen) return;\r\n  audioSeen = S.audio.at;\r\n  VOL = +S.audio.vol; musicOn = !!S.audio.on; musicStarted = true;\r\n  const r = document.querySelector('#volBox input'); if (r) r.value = VOL;\r\n  syncMusic();\r\n}\r\nlet musicStarted = false;\r\n// браузер дозволяє музику лише після першого кліку — вмикаємо її з першим натисканням ведучого\r\ndocument.addEventListener('click', e => { ac(); const h = $('#tapHint'); if (h && h.style.display === 'block') { h.style.display = 'none'; if (musicOn) $('#bgm').play().catch(() => {}); } if (e.target.closest && e.target.closest('#volBox')) return; if (IS_SCREEN && CFG.music && !musicStarted && musicVol() > 0) { musicStarted = true; musicOn = true; syncMusic(); } }, true);\r\n\r\n/* ================= ПУЛЬТ ВЕДУЧОЇ (телефон) ================= */\r\n// Екран (телевізор або Meet) лише показує гру, а ведуча керує з телефона.\r\nfunction spinDone(sp) { return !!sp && (SPUN[sp.at] || serverNow() - sp.at > SPIN_MS); }\r\nlet pultTimer = 0, pVolT = 0;\r\nfunction renderPult() {\r\n  const app = $('#app');\r\n  document.body.classList.add('player');\r\n  if (app.dataset.phase !== S.phase) {\r\n    app.dataset.phase = S.phase;\r\n    let mid = '';\r\n    if (S.phase === 'reg') mid = '\u003cdiv class=\"ph-card\" style=\"text-align:left\">\u003ch2>Реєстрація\u003c/h2>\u003cdiv class=\"muted\">Учасники сканують QR-код на екрані. Тут видно, хто вже в колесі.\u003c/div>\u003cdiv class=\"chips\" id=\"pChips\" style=\"margin-top:12px\">\u003c/div>\u003c/div>'\r\n      + '\u003cform class=\"addf\" onsubmit=\"addPlayer();return false\">\u003cinput id=\"addName\" maxlength=\"22\" placeholder=\"Додати учасника вручну…\" autocomplete=\"off\">\u003cbutton class=\"btn ghost\" style=\"padding:10px 18px;width:auto\">＋\u003c/button>\u003c/form>'\r\n      + '\u003cbutton class=\"btn gold big\" onclick=\"act(\\'start\\')\">Відкрити календар 🎄\u003c/button>';\r\n    else if (S.phase === 'calendar') mid = '\u003cdiv id=\"pStatus\">\u003c/div>\u003cdiv id=\"pSpin\">\u003c/div>\u003cdiv class=\"ph-card\" style=\"text-align:left\">\u003cdiv class=\"muted\" id=\"pProg\">\u003c/div>\u003cdiv class=\"pgrid\" id=\"pGrid\">\u003c/div>\u003c/div>';\r\n    else mid = '\u003cdiv class=\"ph-card\">\u003cdiv style=\"font-size:46px\">🎉\u003c/div>\u003ch2>Гру завершено\u003c/h2>\u003cdiv class=\"muted\">На екрані фінальне привітання і список віконець.\u003c/div>\u003c/div>\u003cbutton class=\"btn gold big\" onclick=\"act(\\'start\\')\">↩ Повернутися до календаря\u003c/button>';\r\n    app.innerHTML = '\u003cdiv class=\"ph\" id=\"pult\">\u003cdiv class=\"ph-head\">\u003cdiv class=\"logo\">\u003cdiv class=\"star\">★\u003c/div>Пульт ведучої\u003c/div>\u003cspan style=\"flex:1\">\u003c/span>\u003cspan class=\"pill\" id=\"pPl\">\u003c/span>\u003c/div>' + mid + '\u003cdiv id=\"pTools\">\u003c/div>\u003c/div>';\r\n  }\r\n  $('#pPl').textContent = '👥 ' + S.players.length;\r\n  if (S.phase === 'reg') patch($('#pChips'), S.players.map(p => p.id + p.name).join(','), S.players.length\r\n    ? S.players.map(p => '\u003cspan class=\"chip\">' + esc(p.name) + '\u003cbutton class=\"x\" onclick=\"removePlayer(\\'' + p.id + '\\')\">✕\u003c/button>\u003c/span>').join('')\r\n    : '\u003cdiv class=\"empty\">Поки нікого. Покажіть QR-код на екрані 📱\u003c/div>');\r\n  else if (S.phase === 'calendar') renderPultCal();\r\n  renderPultTools();\r\n}\r\nfunction renderPultCal() {\r\n  const sp = S.spin, c = S.current, done = spinDone(sp);\r\n  clearTimeout(pultTimer);\r\n  if (sp && !done) pultTimer = setTimeout(render, Math.max(200, SPIN_MS - (serverNow() - sp.at)) + 150);\r\n  let st = '';\r\n  if (c) {\r\n    const k = catOf(c), w = CFG.windows.find(x => x.n === c.n) || {};\r\n    st = '\u003cdiv class=\"task\">\u003cspan class=\"badge\" style=\"background:' + k.color + '\">' + k.e + ' ' + esc(k.name) + '\u003c/span>'\r\n      + '\u003cdiv style=\"margin-top:10px;font-weight:800\">№' + esc(c.n) + ' · ' + (c.pname ? 'для ' + esc(c.pname) : 'для всієї команди') + '\u003c/div>'\r\n      + '\u003ch2>' + esc(c.title) + '\u003c/h2>\u003cdiv class=\"txt\">' + esc(c.text) + '\u003c/div>' + timerHtml(c)\r\n      + (w.answer ? '\u003cdiv class=\"ans\">💡 ' + (c.reveal ? 'Відповідь уже на екрані: ' : 'Відповідь (бачите лише ви): ') + esc(w.answer) + '\u003c/div>' : '')\r\n      + '\u003cdiv class=\"pacts\">'\r\n      + (c.timer ? (c.timerAt ? '\u003cbutton class=\"btn light\" onclick=\"act(\\'timerStop\\')\">⏹ Скинути таймер\u003c/button>' : '\u003cbutton class=\"btn light\" onclick=\"act(\\'timer\\')\">⏱ Запустити таймер\u003c/button>') : '')\r\n      + (w.answer && !c.reveal ? '\u003cbutton class=\"btn light\" onclick=\"act(\\'reveal\\')\">💡 Показати відповідь на екрані\u003c/button>' : '')\r\n      + '\u003cbutton class=\"btn gold big\" onclick=\"act(\\'done\\')\">✓ Виконано\u003c/button>'\r\n      + '\u003cbutton class=\"btn light\" onclick=\"act(\\'cancel\\')\">↩ Закрити віконце назад\u003c/button>\u003c/div>\u003c/div>';\r\n  } else if (sp && !done) st = '\u003cdiv class=\"ph-card\">\u003ch2>Колесо крутиться… 🥁\u003c/h2>\u003c/div>';\r\n  else if (sp && !sp.used) st = '\u003cdiv class=\"ph-card me\">\u003cdiv>Колесо обрало\u003c/div>\u003ch2 style=\"margin-top:4px\">🎯 ' + esc(sp.name) + '\u003c/h2>\u003cdiv>Спитайте номер віконця й натисніть його нижче\u003c/div>\u003c/div>';\r\n  else st = '\u003cdiv class=\"ph-card\">\u003ch2>' + (S.players.length ? 'Крутіть колесо 🎡' : 'Ще немає учасників') + '\u003c/h2>\u003cdiv class=\"muted\">' + (S.players.length ? 'Або одразу відкрийте віконце для всієї команди' : 'Покажіть QR-код на екрані') + '\u003c/div>\u003c/div>';\r\n  patch($('#pStatus'), st + '|' + (c ? c.timerAt : ''), st);\r\n  const can = S.players.length && !c && (!sp || done);\r\n  const b = '\u003cbutton class=\"btn red big\" ' + (can ? '' : 'disabled') + ' onclick=\"act(\\'spin\\')\">🎡 ' + (sp && !sp.used ? 'Крутити ще раз' : 'Крутити колесо') + '\u003c/button>';\r\n  patch($('#pSpin'), b, b);\r\n  const W = CFG.windows;\r\n  $('#pProg').textContent = 'Віконця: відкрито ' + Object.keys(S.opened).length + ' з ' + W.length + '. Натисніть номер, щоб відкрити';\r\n  const g = W.map(w => {\r\n    const who = S.opened[w.n], cur = c && c.n === w.n;\r\n    return '\u003cbutton class=\"pw' + (who ? ' done' : '') + (cur ? ' cur' : '') + '\" ' + (who || c || (sp && !done) ? 'disabled' : '') + ' onclick=\"pultOpen(\\'' + esc(w.n) + '\\')\">\u003cb>' + esc(w.n) + '\u003c/b>\u003cspan>' + (who ? esc(who) : catOf(w).e) + '\u003c/span>\u003c/button>';\r\n  }).join('');\r\n  patch($('#pGrid'), g, g);\r\n}\r\nfunction pultOpen(n) { try { navigator.vibrate && navigator.vibrate(30); } catch (e) {} act('open', { n }); }\r\nfunction renderPultTools() {\r\n  const a = S.audio || { on: false, vol: +CFG.vol || 40 };\r\n  const html = '\u003cdiv class=\"ph-card ptools\" style=\"text-align:left\">\u003cdiv class=\"muted\">Екран гри\u003c/div>'\r\n    + '\u003cbutton class=\"btn ' + (S.showQR ? 'gold' : 'ghost') + '\" onclick=\"act(\\'qr\\',{on:' + !S.showQR + '})\">📱 ' + (S.showQR ? 'Сховати QR-код з екрана' : 'Показати QR-код на екрані') + '\u003c/button>'\r\n    + (CFG.music ? '\u003cdiv class=\"pvol\">\u003cbutton class=\"btn ' + (a.on ? 'gold' : 'ghost') + '\" onclick=\"act(\\'audio\\',{on:' + !a.on + ',vol:' + (+a.vol || 40) + '})\">' + (a.on ? '🎵 Музика грає · вимкнути' : '🔇 Увімкнути музику') + '\u003c/button>'\r\n      + '\u003cdiv class=\"muted\">Гучність на екрані\u003c/div>\u003cinput type=\"range\" min=\"0\" max=\"100\" value=\"' + (+a.vol || 0) + '\" oninput=\"pultVol(this.value)\">\u003c/div>' : '')\r\n    + (S.phase === 'calendar' ? '\u003cbutton class=\"btn ghost\" onclick=\"act(\\'reg\\')\">👥 Екран реєстрації\u003c/button>\u003cbutton class=\"btn ghost\" onclick=\"askEnd()\">🏁 Завершити гру\u003c/button>' : '')\r\n    + '\u003cbutton class=\"btn ghost\" onclick=\"askReset()\">⟲ Почати спочатку\u003c/button>\u003c/div>';\r\n  patch($('#pTools'), [S.showQR, a.on, a.vol, S.phase].join('|'), html);\r\n}\r\nfunction pultVol(v) { clearTimeout(pVolT); pVolT = setTimeout(() => act('audio', { on: true, vol: +v }), 300); }\r\n\r\n/* ================= ТЕЛЕФОН УЧАСНИКА ================= */\r\nlet ME = null;\r\nfunction meKey() { return 'advent_me'; }\r\nfunction loadMe() { try { ME = JSON.parse(localStorage.getItem(meKey()) || 'null'); } catch (e) { ME = null; } }\r\nfunction saveMe() { try { localStorage.setItem(meKey(), JSON.stringify(ME)); } catch (e) {} }\r\nlet editing = false, joining = false;\r\nfunction renderPlayer() {\r\n  const app = $('#app');\r\n  document.body.classList.add('player');\r\n  const inGame = ME && S.players.some(p => p.id === ME.id);\r\n  if (inGame) { const me = S.players.find(p => p.id === ME.id); if (me.name !== ME.name) { ME.name = me.name; saveMe(); } }\r\n  if (!inGame || editing) {\r\n    if (app.dataset.v === 'join') return;\r\n    app.dataset.v = 'join';\r\n    app.innerHTML = '\u003cdiv class=\"ph\">\u003cdiv class=\"ph-head\">\u003cdiv class=\"logo\">\u003cdiv class=\"star\">★\u003c/div>' + esc(CFG.title) + '\u003c/div>\u003c/div>'\r\n      + '\u003cdiv class=\"ph-hero\">\u003cdiv class=\"big\">🎄\u003c/div>\u003ch1>Привіт!\u003c/h1>\u003cp>Впиши свій нікнейм — і ти потрапиш у колесо фортуни. Колесо обиратиме, хто відкриває наступне віконце адвент-календаря.\u003c/p>\u003c/div>'\r\n      + '\u003cform onsubmit=\"join();return false\">\u003cinput class=\"nick\" id=\"nick\" maxlength=\"22\" autocomplete=\"off\" placeholder=\"Твій нікнейм\" value=\"' + esc(ME ? ME.name : '') + '\">\u003cbutton class=\"btn gold\" id=\"joinBtn\">Увійти в гру ✨\u003c/button>\u003c/form>'\r\n      + (editing ? '\u003cbutton class=\"btn ghost\" onclick=\"editing=false;render()\">Скасувати\u003c/button>' : '')\r\n      + '\u003cdiv class=\"foot\">Гра йде на екрані ведучого в Google Meet\u003c/div>\u003c/div>';\r\n    return;\r\n  }\r\n  app.dataset.v = 'game';\r\n  if (!$('#phGame')) {\r\n    app.innerHTML = '\u003cdiv class=\"ph\" id=\"phGame\">\u003cdiv class=\"ph-head\">\u003cdiv class=\"logo\">\u003cdiv class=\"star\">★\u003c/div>' + esc(CFG.title) + '\u003c/div>\u003c/div>'\r\n      + '\u003cdiv class=\"ph-card\" style=\"padding:14px\">\u003cdiv class=\"muted\">Ти в грі як\u003c/div>\u003ch2 id=\"myName\" style=\"margin:4px 0 0;color:var(--gold2)\">\u003c/h2>\u003c/div>'\r\n      + '\u003cdiv id=\"phMain\">\u003c/div>\u003cdiv class=\"ph-wheel\">\u003cdiv class=\"wheel-box\" id=\"pwheel\">\u003c/div>\u003c/div>\u003cdiv id=\"phInfo\">\u003c/div>'\r\n      + '\u003cdiv class=\"foot\">\u003ca href=\"#\" onclick=\"editing=true;render();return false\">Змінити нікнейм\u003c/a>\u003c/div>\u003c/div>';\r\n  }\r\n  $('#myName').textContent = ME.name;\r\n  const c = S.current, sp = S.spin, spunDone = spinFinished(sp);\r\n  let main = '';\r\n  if (S.phase === 'reg') main = '\u003cdiv class=\"ph-card\">\u003ch2>Ти в колесі 🎡\u003c/h2>\u003cdiv class=\"muted\">Чекаємо, поки всі зберуться. Ведучий скоро відкриє календар!\u003c/div>\u003c/div>';\r\n  else if (S.phase === 'end') main = '\u003cdiv class=\"ph-card\">\u003cdiv style=\"font-size:50px\">🎉\u003c/div>\u003ch2>Календар відкрито!\u003c/h2>\u003cdiv class=\"muted\">Дякуємо за гру і з Новим 2027 роком!\u003c/div>\u003c/div>';\r\n  else if (c) {\r\n    const mine = c.pid && c.pid === ME.id, k = catOf(c);\r\n    main = (mine ? '\u003cdiv class=\"ph-card me\">\u003ch2>🎯 Це твоє завдання!\u003c/h2>\u003cdiv>Віконце №' + esc(c.n) + '\u003c/div>\u003c/div>' : '')\r\n      + '\u003cdiv class=\"task\">\u003cspan class=\"badge\" style=\"background:' + k.color + '\">' + k.e + ' ' + esc(k.name) + '\u003c/span>'\r\n      + '\u003cdiv style=\"margin-top:10px;font-weight:800\">' + (c.pname ? 'Для: ' + esc(c.pname) : 'Для всієї команди 🎄') + ' · №' + esc(c.n) + '\u003c/div>'\r\n      + '\u003ch2>' + esc(c.title) + '\u003c/h2>\u003cdiv class=\"txt\">' + esc(c.text) + '\u003c/div>' + timerHtml(c)\r\n      + (c.reveal && c.answer ? '\u003cdiv class=\"ans\">💡 ' + esc(c.answer) + '\u003c/div>' : '') + '\u003c/div>';\r\n  } else if (sp && !spunDone) main = '\u003cdiv class=\"ph-card\">\u003ch2>Колесо крутиться… 🥁\u003c/h2>\u003cdiv class=\"muted\">Може, це будеш ти?\u003c/div>\u003c/div>';\r\n  else if (sp && !sp.used) main = sp.pid === ME.id\r\n    ? '\u003cdiv class=\"ph-card me\">\u003cdiv style=\"font-size:46px\">🎉\u003c/div>\u003ch2>Колесо обрало тебе!\u003c/h2>\u003cdiv>Назви ведучому номер віконця, яке хочеш відкрити\u003c/div>\u003c/div>'\r\n    : '\u003cdiv class=\"ph-card\">\u003cdiv class=\"muted\">Колесо обрало\u003c/div>\u003ch2 style=\"color:var(--gold2);margin-top:4px\">' + esc(sp.name) + '\u003c/h2>\u003cdiv class=\"muted\">Зараз відкриється віконце…\u003c/div>\u003c/div>';\r\n  else main = '\u003cdiv class=\"ph-card\">\u003ch2>Ведучий от-от крутне колесо 🎡\u003c/h2>\u003cdiv class=\"muted\">' + (CFG.noRepeat && S.done.indexOf(ME.id) >= 0 ? 'Ти вже виконав(-ла) завдання в цьому колі ✓' : 'Тримай телефон під рукою!') + '\u003c/div>\u003c/div>';\r\n  const msig = main + '|' + (c ? c.timerAt : '');\r\n  patch($('#phMain'), msig, main);\r\n  const showWheel = S.phase === 'calendar' && !c;\r\n  $('.ph-wheel').style.display = showWheel ? '' : 'none';\r\n  if (showWheel) renderWheel($('#pwheel'), S);\r\n  const opened = Object.keys(S.opened).length, total = CFG.windows.length;\r\n  const info = '\u003cdiv class=\"ph-card\" style=\"text-align:left\">\u003cdiv class=\"muted\">Відкрито віконець: \u003cb>' + opened + ' з ' + total + '\u003c/b>\u003c/div>\u003cdiv class=\"prog-bar\">\u003ci style=\"width:' + (total ? opened / total * 100 : 0) + '%\">\u003c/i>\u003c/div>'\r\n    + '\u003cdiv class=\"muted\" style=\"margin:14px 0 8px\">У грі: ' + S.players.length + '\u003c/div>\u003cdiv class=\"chips\">'\r\n    + S.players.map(p => '\u003cspan class=\"chip' + (p.id === ME.id ? ' mine' : '') + (CFG.noRepeat && S.done.indexOf(p.id) >= 0 ? ' done' : '') + '\">' + esc(p.name) + '\u003c/span>').join('') + '\u003c/div>\u003c/div>';\r\n  patch($('#phInfo'), info, info);\r\n}\r\nfunction join() {\r\n  if (joining) return;\r\n  const v = $('#nick').value.trim();\r\n  if (!v) return toast('Впиши свій нікнейм');\r\n  joining = true; $('#joinBtn').disabled = true; $('#joinBtn').textContent = 'Заходимо…';\r\n  if (!ME) ME = { id: 'p' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36) };\r\n  call('joinGame', v, ME.id).then(r => {\r\n    joining = false; ME = r.me; saveMe(); editing = false; $('#app').dataset.v = ''; apply(r); render();\r\n  }).catch(e => { joining = false; toast('⚠️ ' + (e && e.message || e)); const b = $('#joinBtn'); if (b) { b.disabled = false; b.textContent = 'Увійти в гру ✨'; } });\r\n}\r\n\r\n/* ================= СТАРТ ================= */\r\nif (MODE === 'badkey') renderBad();\r\nelse {\r\n  if (!IS_SCREEN) loadMe();\r\n  $('#app').innerHTML = '\u003cdiv class=\"bad\">\u003cdiv style=\"font-size:50px;animation:floaty 2s infinite\">🎄\u003c/div>\u003c/div>';\r\n  poll();\r\n}\r\n";               // код самої гри (з Index.html)
+  const ENGINE_SRC = "const SH = {\"settings\":\"Налаштування\",\"windows\":\"Віконця\",\"bank\":\"Банк ідей\",\"players\":\"Учасники\",\"log\":\"Журнал\"};\nfunction fresh_() {\r\n  return { gameId: Utilities.getUuid().slice(0, 8), ver: Date.now(), phase: 'reg', players: [], done: [], opened: {}, spin: null, current: null, showQR: false, audio: null };\r\n}\nfunction reply_(st) { return { now: Date.now(), ver: st.ver, s: st }; }\nfunction hostAction(key, action, p) {\r\n  const cfg = getConfig_();\r\n  if (String(key) !== cfg.key) throw new Error('Немає доступу: неправильне посилання ведучого');\r\n  p = p || {};\r\n  let logLine = null, newPlayer = null;\r\n  const res = withLock_(st => {\r\n    switch (action) {\r\n      case 'start': st.phase = 'calendar'; break;\r\n      case 'reg': st.phase = 'reg'; break;\r\n      case 'end': st.phase = 'end'; st.current = null; st.spin = null; break;\r\n      case 'add': {\r\n        const name = String(p.name || '').replace(/\\s+/g, ' ').trim().slice(0, 22);\r\n        if (!name) throw new Error('Впишіть ім’я учасника');\r\n        if (st.players.some(x => x.name.toLowerCase() === name.toLowerCase())) throw new Error('Такий учасник уже є');\r\n        st.players.push({ id: 'h' + Utilities.getUuid().slice(0, 8), name, at: Date.now() });\r\n        newPlayer = name; break;\r\n      }\r\n      case 'remove':\r\n        st.players = st.players.filter(x => x.id !== p.id);\r\n        st.done = st.done.filter(x => x !== p.id);\r\n        if (st.spin && st.spin.pid === p.id && !st.current) st.spin = null;\r\n        break;\r\n      case 'spin': {\r\n        if (st.current) throw new Error('Спершу закрийте відкрите віконце');\r\n        if (!st.players.length) throw new Error('У колесі ще немає учасників');\r\n        let list = cfg.noRepeat ? st.players.filter(x => st.done.indexOf(x.id) \u003c 0) : st.players.slice();\r\n        if (!list.length) { st.done = []; list = st.players.slice(); } // усі вже грали — нове коло\r\n        const idx = Math.floor(Math.random() * list.length);\r\n        st.spin = { at: Date.now(), list: list.map(x => ({ id: x.id, name: x.name })), idx, pid: list[idx].id, name: list[idx].name, turn: Math.random(), used: false };\r\n        break;\r\n      }\r\n      case 'open': {\r\n        const n = String(p.n);\r\n        if (st.current) throw new Error('Спершу закрийте відкрите віконце');\r\n        if (st.opened[n]) throw new Error('Це віконце вже відкрите');\r\n        const w = cfg.windows.find(x => x.n === n);\r\n        if (!w) throw new Error('Віконце №' + n + ' не знайдено в таблиці');\r\n        const forOne = !w.all && st.spin && !st.spin.used;\r\n        st.current = { n, cat: w.cat, emoji: w.emoji, title: w.title, text: w.text, timer: w.timer, img: w.img, all: w.all,\r\n          hasAnswer: !!w.answer, answer: '', reveal: false, timerAt: 0, at: Date.now(),\r\n          pid: forOne ? st.spin.pid : '', pname: forOne ? st.spin.name : '' };\r\n        if (forOne) st.spin.used = true;\r\n        break;\r\n      }\r\n      case 'reveal': {\r\n        if (!st.current) break;\r\n        const w = cfg.windows.find(x => x.n === st.current.n);\r\n        st.current.reveal = true; st.current.answer = w ? w.answer : '';\r\n        break;\r\n      }\r\n      case 'timer': if (st.current) st.current.timerAt = Date.now() + 800; break;\r\n      case 'timerStop': if (st.current) st.current.timerAt = 0; break;\r\n      case 'qr': st.showQR = !!p.on; break;                       // великий QR-код на екрані (керує пульт)\r\n      case 'audio': st.audio = { on: !!p.on, vol: Math.max(0, Math.min(100, +p.vol || 0)), at: Date.now() }; break; // музика на екрані з пульта\r\n      case 'done': {\r\n        const c = st.current; if (!c) break;\r\n        st.opened[c.n] = c.pname || 'Уся команда';\r\n        if (c.pid && st.done.indexOf(c.pid) \u003c 0) st.done.push(c.pid);\r\n        if (st.spin && st.spin.used) st.spin = null;\r\n        st.current = null;\r\n        logLine = [new Date(), st.gameId, c.n, c.cat, c.title, c.pname || 'Уся команда'];\r\n        break;\r\n      }\r\n      case 'cancel': // віконце закривається назад, обраний учасник може назвати інше\r\n        if (st.spin && st.current && st.current.pid) st.spin.used = false;\r\n        st.current = null; break;\r\n      case 'reset': {\r\n        const keep = p.keepPlayers ? st.players : [];\r\n        Object.assign(st, fresh_());\r\n        st.players = keep;\r\n        if (keep.length) st.phase = 'calendar';\r\n        break;\r\n      }\r\n      default: throw new Error('Невідома дія: ' + action);\r\n    }\r\n  });\r\n  if (logLine) logRow_(SH.log, logLine);\r\n  if (newPlayer) logRow_(SH.players, [new Date(), res.st.gameId, newPlayer, 'додав ведучий']);\r\n  return reply_(res.st);\r\n}\nfunction clientCfg_(cfg, mode) {\r\n  const c = { title: cfg.title, subtitle: cfg.subtitle, bg: cfg.bg, noRepeat: cfg.noRepeat, mode: mode };\r\n  if (mode === 'screen') {\r\n    c.music = cfg.music.length; c.vol = cfg.vol; c.house = cfg.house;\r\n    c.windows = cfg.windows.map(w => ({ n: w.n, cat: w.cat, emoji: w.emoji, title: w.title, all: w.all }));\r\n  } else if (mode === 'pult') { // пульт ведучої бачить усе, разом із відповідями\r\n    c.music = cfg.music.length; c.vol = cfg.vol;\r\n    c.windows = cfg.windows.map(w => ({ n: w.n, cat: w.cat, emoji: w.emoji, title: w.title, text: w.text, answer: w.answer, timer: w.timer, all: w.all }));\r\n  } else {\r\n    c.windows = cfg.windows.map(w => ({ n: w.n }));\r\n  }\r\n  return c;\r\n}\n";       // рушій гри (функції з Code.js)
+  const ROOT = 'advent/';
+  const q = new URLSearchParams(location.search);
+  const KEY = q.get('screen') !== null ? q.get('screen') : q.get('pult');
+  let MODE = q.get('screen') !== null ? 'screen' : (q.get('pult') !== null ? 'pult' : 'player');
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  /* ---------- Запит до Apps Script (таблиця, музика, журнали) ---------- */
+  function rpc(fn, args, ms) {
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms || 30000);
+    return fetch(API, { method: 'POST', body: JSON.stringify({ fn: fn, args: args }),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow', signal: ctl.signal })
+      .then(r => { if (!r.ok) throw new Error('Сервер не відповідає (' + r.status + ')'); return r.json(); })
+      .then(j => { if (j.error) throw new Error(j.error); return j.result; })
+      .catch(e => { throw (e && e.name === 'AbortError') ? new Error('Немає зв’язку із сервером') : e; })
+      .finally(() => clearTimeout(t));
+  }
+
+  let db = null, uid = '', OFFS = 0;
+  const now = () => Date.now() + OFFS;      // годинник Firebase
+  const EMPTY = () => ({ gameId: '', ver: 0, phase: 'reg', done: [], opened: {}, spin: null, current: null });
+  let ST = null, PL = {}, haveSt = false, havePl = false;
+  const kick = () => { if (window.__started && typeof poll === 'function') { polling = false; poll(); } };
+
+  /* Стан, який бачить гра: стан з Firebase + список учасників */
+  function snapshot() {
+    const st = Object.assign(EMPTY(), ST || {});
+    st.done = st.done || []; st.opened = st.opened || {};
+    st.players = Object.keys(PL).map(id => ({ id, name: String(PL[id].name || ''), at: +PL[id].at || 0 }))
+      .filter(p => p.name).sort((a, b) => a.at - b.at || (a.id < b.id ? -1 : 1));
+    st.ver = (st.ver || 0) + '|' + st.players.map(p => p.id + ':' + p.name).join(',');
+    return st;
+  }
+  function getState(ver) {
+    const s = snapshot();
+    return { now: now(), ver: s.ver, s: String(s.ver) === String(ver) ? null : s };
+  }
+
+  /* ---------- Телефон: учасник вписує нікнейм ---------- */
+  async function joinGame(name) {
+    name = String(name || '').replace(/\s+/g, ' ').trim().slice(0, 22);
+    if (!name) throw new Error('Впиши свій нікнейм');
+    const others = snapshot().players.filter(p => p.id !== uid).map(p => p.name.toLowerCase());
+    let nm = name, k = 2;
+    while (others.indexOf(nm.toLowerCase()) >= 0) nm = name + ' ' + (k++);
+    const mine = PL[uid];
+    await db.ref(ROOT + 'players/' + uid).set({ name: nm, at: mine && mine.at ? mine.at : firebase.database.ServerValue.TIMESTAMP });
+    await sleep(150);
+    const out = getState(''); out.me = { id: uid, name: nm };
+    return out;
+  }
+
+  /* ---------- Екран ведучої: рушій гри ---------- */
+  let E = null;
+  function makeEngine(full) {
+    const HostDate = class extends Date { static now() { return now(); } };
+    const fmt = d => {
+      const p = {};
+      new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Kyiv', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+        .formatToParts(d).forEach(x => { p[x.type] = x.value; });
+      return p.year + '-' + p.month + '-' + p.day + ' ' + (p.hour === '24' ? '00' : p.hour) + ':' + p.minute + ':' + p.second;
+    };
+    let working = null;
+    const SVC = {
+      Date: HostDate,
+      getConfig_: () => E.cfg,
+      withLock_: fn => { const st = working; st.ver = now(); return { st, r: fn(st) }; },
+      logRow_: (sheet, row) => { rpc('logRow', [KEY, sheet, row.map(v => v instanceof Date ? fmt(v) : v)]).catch(() => {}); },
+      Utilities: { getUuid: () => (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(16).slice(2) + Date.now().toString(16)) }
+    };
+    const F = new Function('SVC', 'const { Date, getConfig_, withLock_, logRow_, Utilities } = SVC;\n' + ENGINE_SRC +
+      '\nreturn { hostAction, fresh_, clientCfg_ };')(SVC);
+    const eng = { cfg: full, F };
+    let chain = Promise.resolve();
+    /* Виконує дію ведучої над свіжим станом і записує результат у Firebase одним оновленням */
+    eng.act = (key, action, p) => (chain = chain.catch(() => {}).then(async () => {
+      const before = snapshot();
+      working = JSON.parse(JSON.stringify(before));
+      const res = F.hostAction(key, action, p);
+      const st = res.s;
+      const up = {};
+      const oldIds = {}; before.players.forEach(x => { oldIds[x.id] = x; });
+      const newIds = {}; st.players.forEach(x => { newIds[x.id] = x; });
+      Object.keys(oldIds).forEach(id => { if (!newIds[id]) up['players/' + id] = null; });
+      Object.keys(newIds).forEach(id => { if (!oldIds[id]) up['players/' + id] = { name: newIds[id].name, at: newIds[id].at || now() }; });
+      const clean = Object.assign({}, st); delete clean.players; clean.ver = now();
+      up.state = JSON.stringify(clean);
+      await db.ref(ROOT.slice(0, -1)).update(up);
+      ST = clean;
+      return getState('');
+    }));
+    /* Нові учасники з телефонів — у аркуш «Учасники» (кожного один раз) */
+    const LOGGED = {};
+    const seenKey = () => 'advent_logged_' + ((ST && ST.gameId) || '');
+    eng.logPlayers = () => {
+      if (!ST || !ST.gameId) return;
+      let seen = {}; try { seen = JSON.parse(localStorage.getItem(seenKey()) || '{}'); } catch (e) {}
+      let changed = false;
+      Object.keys(PL).forEach(id => {
+        const mem = ST.gameId + ':' + id;
+        if (seen[id] || LOGGED[mem] || id[0] === 'h') return;   // h… — додані ведучою, їх записує сам рушій
+        seen[id] = 1; LOGGED[mem] = 1; changed = true;
+        rpc('logRow', [KEY, 'Учасники', [fmt(new Date(+PL[id].at || now())), ST.gameId, String(PL[id].name || ''), 'телефон']]).catch(() => {});
+      });
+      if (changed) try { localStorage.setItem(seenKey(), JSON.stringify(seen)); } catch (e) {}
+    };
+    return eng;
+  }
+
+  /* ---------- Той самий google.script.run, що в Apps Script ---------- */
+  function dispatch(fn, args) {
+    if (fn === 'getMusic') return rpc(fn, args, 60000);
+    if (fn === 'getState') return Promise.resolve(getState(args[0]));
+    if (fn === 'joinGame') return joinGame(args[0]);
+    if (fn === 'hostAction') { if (!E) return Promise.reject(new Error('Немає доступу')); return E.act(args[0], args[1], args[2]); }
+    return Promise.reject(new Error('Невідома дія'));
+  }
+  window.google = { script: { get run() {
+    let ok = () => {}, fail = () => {};
+    const p = new Proxy({}, { get(_, k) {
+      if (k === 'withSuccessHandler') return f => { ok = f; return p; };
+      if (k === 'withFailureHandler') return f => { fail = f; return p; };
+      return (...a) => { Promise.resolve().then(() => dispatch(k, a)).then(r => ok(r), e => fail(e)); };
+    } });
+    return p;
+  } } };
+
+  /* ---------- Запуск ---------- */
+  function runGame(c) {
+    c.url = location.origin + location.pathname;   // QR-код веде на цей сайт
+    if (c.title) document.title = c.title;
+    window.__MODE = MODE; window.__CFG = c;
+    const s = document.createElement('script');
+    s.textContent = GAME + '\nwindow.__started = true;';
+    document.body.appendChild(s);
+  }
+  function listen() {
+    return new Promise(resolve => {
+      const ready = () => { if (haveSt && havePl) resolve(); };
+      db.ref('.info/serverTimeOffset').on('value', s => { OFFS = s.val() || 0; });
+      db.ref(ROOT + 'state').on('value', s => {
+        try { ST = s.val() ? JSON.parse(s.val()) : null; } catch (e) { ST = null; }
+        haveSt = true; ready(); if (E) E.logPlayers(); kick();
+      });
+      db.ref(ROOT + 'players').on('value', s => {
+        PL = s.val() || {}; havePl = true; ready(); if (E) E.logPlayers(); kick();
+      });
+    });
+  }
+  async function start(attempt) {
+    try {
+      if (!db) {
+        firebase.initializeApp(FB);
+        const cred = await firebase.auth().signInAnonymously();
+        uid = cred.user.uid;
+        db = firebase.database();
+      }
+      let c;
+      if (MODE === 'screen' || MODE === 'pult') {
+        // ключ із посилання перевіряють правила Firebase
+        try { await db.ref(ROOT + 'hosts/' + uid).set(KEY); }
+        catch (e) { MODE = 'badkey'; runGame({ title: 'Адвент-календар', windows: [] }); return; }
+        c = await rpc('config', [KEY]);
+        if (!c.full) { MODE = 'badkey'; runGame(c); return; }
+        E = makeEngine(c.full);
+        delete c.full;
+        if (MODE === 'pult') { const url = c.url; c = E.F.clientCfg_(E.cfg, 'pult'); c.url = url; }
+        c.key = KEY;
+        await listen();
+        // телефонам — назва гри й номери віконець (тексти завдань лишаються в ведучої)
+        const pub = E.F.clientCfg_(E.cfg, 'player');
+        db.ref(ROOT + 'cfg').set(JSON.stringify(pub)).catch(() => {});
+        if (!ST) await E.act(KEY, 'reset', { keepPlayers: true }).catch(() => {});
+      } else {
+        const v = await Promise.race([db.ref(ROOT + 'cfg').once('value'), sleep(6000).then(() => null)]);
+        try { c = v && v.val() ? JSON.parse(v.val()) : null; } catch (e) { c = null; }
+        if (!c) c = await rpc('config', []);
+        c.mode = 'player';
+        await Promise.race([listen(), sleep(8000)]);
+      }
+      runGame(c);
+    } catch (e) {
+      console.warn(e);
+      const app = document.getElementById('app');
+      if (app) app.innerHTML = '<div class="bad"><div><div style="font-size:50px">🎄</div><p style="margin-top:12px;opacity:.8">Не вдалося з’єднатися з грою. Пробуємо ще раз…</p></div></div>';
+      setTimeout(() => start(attempt + 1), Math.min(10000, 2000 * (attempt + 1)));
+    }
+  }
+  start(0);
+})();
+
+</script>
+</body>
+</html>
